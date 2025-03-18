@@ -1,18 +1,72 @@
-name: Test Self-Hosted Runner
+name: pipeline
 
 on:
-  workflow_dispatch:  # Позволяет запускать workflow вручную через интерфейс GitHub
+  push:
+    branches:
+      - main       # Запуск при пуше в главную ветку
+      - feature/** # Запуск при пуше в ветки, начинающиеся с feature/
+  pull_request:
+    branches:
+      - main       # Запуск при создании Pull Request в главную ветку
 
 jobs:
-  test:
-    runs-on: self-hosted  # Указываем, что job должен выполняться на self-hosted runner
+  build-and-push-docker:
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Print a message
-      run: echo "Hello from the self-hosted runner on Windows!"
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Print current directory
-      run: echo "писька"
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-    - name: Print environment variables
-      run: set
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA} .
+
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA}
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: build-and-push-docker
+    if: github.ref == 'refs/heads/main' # Запускать только для главной ветки
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Deploy to Staging
+        run: |
+          echo "Deploying to Staging Environment..."
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA}
+          docker-compose -f docker-compose.staging.yml up -d
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/production' # Запускать только для ветки production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Deploy to Production
+        run: |
+          echo "Deploying to Production Environment..."
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA}
+          docker-compose -f docker-compose.production.yml up -d
