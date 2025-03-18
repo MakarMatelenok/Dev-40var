@@ -29,27 +29,6 @@ jobs:
       - name: Push Docker image to Docker Hub
         run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA}
 
-  deploy-staging:
-    runs-on: ubuntu-latest
-    needs: build-and-push-docker
-    if: github.ref == 'refs/heads/main' # Запускать только для главной ветки
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-      - name: Deploy to Staging
-        run: |
-          echo "Deploying to Staging Environment..."
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA}
-          docker-compose -f docker-compose.staging.yml up -d
-
   deploy-production:
     runs-on: ubuntu-latest
     needs: deploy-staging
@@ -69,4 +48,4 @@ jobs:
         run: |
           echo "Deploying to Production Environment..."
           docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA}
-          docker-compose -f docker-compose.production.yml up -d
+          docker run -p 80:80 -d ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA}
