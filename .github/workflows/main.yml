@@ -1,50 +1,33 @@
-name: pipeline
+name: Docker Build, Push, and Deploy
 
 on:
   push:
     branches:
-      - main       # Запуск при пуше в главную ветку
-      - feature/** # Запуск при пуше в ветки, начинающиеся с feature/
-  pull_request:
-    branches:
-      - main       # Запуск при создании Pull Request в главную ветку
+      - main  # Триггер на пуше в ветку main
 
 jobs:
-  build-and-push-docker:
+  build-push-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+    - name: Log in to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA} .
+    - name: Build Docker image
+      run: docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/kursach:latest .
 
-      - name: Push Docker image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA}
+    - name: Push Docker image to DockerHub
+      run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/kursach:latest
 
-  deploy-production:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/production' # Запускать только для ветки production
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-      - name: Deploy to Production
-        run: |
-          echo "Deploying to Production Environment..."
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA}
-          docker run -p 80:80 -d ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:${GITHUB_SHA}
+    - name: Deploy to server
+      run: |
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/kursach:latest &&
+          docker stop kursach || true &&
+          docker rm kursach || true &&
+          docker run -d -p 80:80 --name kursach ${{ secrets.DOCKER_HUB_USERNAME }}/kursach:latest
