@@ -8,43 +8,19 @@ on:
 jobs:
   build:
     runs-on: self-hosted
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Log in to DockerHub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
     - name: Build Docker image
       run: docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/kursach:latest .
-
-    - name: Save Docker image as artifact
-      run: docker save -o kursach-image.tar ${{ secrets.DOCKER_HUB_USERNAME }}/kursach:latest
-
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4  # Используем v4 вместо v3
-      with:
-        name: kursach-image
-        path: kursach-image.tar
 
   push:
     runs-on: self-hosted
     needs: build  # Зависит от джобы build
 
     steps:
-    - name: Download Docker image artifact
-      uses: actions/download-artifact@v4  # Используем v4 вместо v3
-      with:
-        name: kursach-image
-        path: .
-
-    - name: Load Docker image
-      run: docker load -i kursach-image.tar
-
     - name: Log in to DockerHub
       uses: docker/login-action@v2
       with:
