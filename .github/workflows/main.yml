@@ -12,7 +12,7 @@ jobs:
       run: echo "Hello from the self-hosted runner on Windows!"
 
     - name: Print current directory
-      run: echo "Current directory: %cd%"
+      run: echo "писька"
 
     - name: Print environment variables
       run: set
