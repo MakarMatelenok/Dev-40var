@@ -32,7 +32,7 @@ jobs:
         path: kursach-image.tar
 
   push:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build  # Зависит от джобы build
 
     steps:
@@ -55,7 +55,7 @@ jobs:
       run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/kursach:latest
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: push  # Зависит от джобы push
 
     steps:
