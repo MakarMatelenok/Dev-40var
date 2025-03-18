@@ -1,0 +1,18 @@
+name: Test Self-Hosted Runner
+
+on:
+  workflow_dispatch:  # Позволяет запускать workflow вручную через интерфейс GitHub
+
+jobs:
+  test:
+    runs-on: self-hosted  # Указываем, что job должен выполняться на self-hosted runner
+
+    steps:
+    - name: Print a message
+      run: echo "Hello from the self-hosted runner on Windows!"
+
+    - name: Print current directory
+      run: echo "Current directory: %cd%"
+
+    - name: Print environment variables
+      run: set
