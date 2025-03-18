@@ -3,12 +3,14 @@ name: Docker Build, Push, and Deploy
 on:
   push:
     branches:
-      - main  # Триггер на пуше в ветку main
+      - develop  # Триггер на пуше в ветку develop
+      - main     # Триггер на пуше в ветку main
 
 jobs:
   build:
     runs-on: self-hosted
-    
+    if: github.ref == 'refs/heads/develop'  # Запускать только для ветки develop
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -18,7 +20,8 @@ jobs:
 
   push:
     runs-on: self-hosted
-    needs: build  # Зависит от джобы build
+    needs: build  # Зависит от задачи build
+    if: github.ref == 'refs/heads/develop'  # Запускать только для ветки develop
 
     steps:
     - name: Log in to DockerHub
@@ -32,7 +35,8 @@ jobs:
 
   deploy:
     runs-on: self-hosted
-    needs: push  # Зависит от джобы push
+    needs: push  # Зависит от задачи push
+    if: github.ref == 'refs/heads/main'  # Запускать только для ветки main
 
     steps:
     - name: Log in to DockerHub
@@ -58,5 +62,6 @@ jobs:
     
         # Run the new container
         docker run -d -p 80:80 --name $containerName $imageName
+
     - name: Clean up unused Docker images
       run: docker image prune -a -f
