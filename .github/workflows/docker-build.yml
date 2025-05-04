@@ -2,22 +2,37 @@ name: Build and Deploy Flask App
 
 on:
   push:
-    branches: ["main"]  # Исправлено с "hello" на "main"
+    branches: ["main"]
 
 jobs:
   build:
     runs-on: self-hosted
-
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Build Docker image
-        run: |
-          docker build -t flask-app .
-
-      - name: Run container
-        run: |
-          docker stop myapp || true
-          docker rm myapp || true
-          docker run -d -p 80:80 --name myapp flask-app
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Verify Docker
+      run: |
+        docker --version
+        docker ps
+        
+    - name: Build Docker image
+      run: |
+        echo "=== START BUILDING ==="
+        docker build -t flask-app .
+        echo "=== BUILD COMPLETE ==="
+        
+    - name: Verify Image
+      run: |
+        docker images
+        docker inspect flask-app
+        
+    - name: Run container
+      run: |
+        echo "=== STARTING CONTAINER ==="
+        docker stop myapp || true
+        docker rm myapp || true
+        docker run -d -p 80:80 --name myapp flask-app
+        echo "=== CONTAINER RUNNING ==="
+        docker ps
