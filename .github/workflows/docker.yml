@@ -1,31 +1,30 @@
-name: Deploy Kursach App  # Изменил название для ясности
+name: Deploy Kursach App
 
 on: 
   push:
-    branches: ["main"]  # Срабатывает при пуше в main ветку
+    branches: ["main"]
 
 jobs:
   deploy:
-    runs-on: self-hosted  # Запуск на вашем ПК
+    runs-on: self-hosted
     
     steps:
-    # 1. Забираем код из репозитория
     - uses: actions/checkout@v4
     
-    # 2. Собираем образ (теперь с именем kursach)
     - name: Build Docker image
-      run: docker build -t kursach .  # Изменил имя образа
+      shell: powershell
+      run: docker build -t kursach .
     
-    # 3. Останавливаем и удаляем старый контейнер
     - name: Stop and remove old container
+      shell: powershell  # Явно указываем PowerShell
       run: |
-        docker stop kursach || true  # Изменил имя контейнера
-        docker rm kursach || true    # Изменил имя контейнера
+        try { docker stop kursach } catch { Write-Host "Контейнер уже остановлен" }
+        try { docker rm kursach } catch { Write-Host "Контейнер уже удален" }
     
-    # 4. Запускаем новый контейнер
     - name: Run new container
+      shell: powershell
       run: |
-        docker run -d \
-          -p 80:80 \
-          --name kursach \  # Изменил имя контейнера
-          kursach  # Используем новый имя образа
+        docker run -d `
+          -p 80:80 `
+          --name kursach `
+          kursach
