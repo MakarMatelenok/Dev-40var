@@ -8,45 +8,45 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
-    - name: Check Docker
+    - name: Initialize Docker
       shell: powershell
       run: |
+        # Проверка доступности Docker
         docker --version
         docker ps -a
         
-    - name: Stop container if exists
+    - name: Cleanup old container
       shell: powershell
       run: |
-        $containerId = docker ps -q -f name=python-app
-        if ($containerId) {
-          docker stop $containerId
-          Write-Host "Container stopped"
+        # Безопасное удаление предыдущего контейнера
+        $container = docker ps -aq --filter "name=python-app"
+        if ($container) {
+          docker stop $container
+          docker rm $container
+          Write-Host "Old container removed"
         } else {
-          Write-Host "No running container found"
+          Write-Host "No existing container found"
         }
         
-    - name: Remove container if exists
+    - name: Pull image
       shell: powershell
       run: |
-        $containerId = docker ps -a -q -f name=python-app
-        if ($containerId) {
-          docker rm $containerId
-          Write-Host "Container removed"
-        } else {
-          Write-Host "No container found"
-        }
-        
-    - name: Pull latest image
-      shell: powershell
-      run: |
+        # Авторизация и загрузка образа
+        $env:DOCKER_HOST = "npipe:////./pipe/docker_engine"
+        $token = "${{ secrets.DOCKER_HUB_TOKEN }}"
+        echo $token | docker login -u makarmatelenok --password-stdin
         docker pull makarmatelenok/kursach:latest
         
     - name: Run container
       shell: powershell
       run: |
-        docker run -d -p 80:80 --name python-app makarmatelenok/kursach:latest
+        # Запуск контейнера напрямую через Docker
+        docker run -d `
+          -p 80:80 `
+          --name python-app `
+          --restart unless-stopped `
+          makarmatelenok/kursach:latest
+        
+        # Проверка статуса
         docker ps -a
-    - name: Run container
-      shell: powershell
-      run: |
-        wsl -e bash -c "docker run -d -p 80:80 --name python-app makarmatelenok/kursach:latest"
+        Write-Host "Container started successfully"
