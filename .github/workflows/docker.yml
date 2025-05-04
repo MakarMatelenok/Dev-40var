@@ -1,4 +1,4 @@
-name: Docker Build and Deploy (Linux on Windows)
+name: Docker Build and Deploy
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Сборка на Linux
+    runs-on: ubuntu-latest  # Сборка всегда на Linux
     
     steps:
     - uses: actions/checkout@v4
@@ -17,31 +17,27 @@ jobs:
 
     - name: Build and push
       run: |
-        docker build -t makarmatelenok/kursach:latest .
+        docker build --platform linux/amd64 -t makarmatelenok/kursach:latest .
         docker push makarmatelenok/kursach:latest
 
   deploy:
     needs: build
-    runs-on: self-hosted  # Ваш Windows-раннер
+    runs-on: self-hosted  # Windows с WSL2
     steps:
-    - name: Set up WSL2 integration
+    - name: Initialize WSL2
       shell: powershell
       run: |
-        # Проверяем, что Docker использует WSL2
-        docker version --format '{{.Server.Os}}'
-        
-    - name: Stop and remove old container
-      shell: bash  # Явно используем Bash для Linux-синтаксиса
-      run: |
-        docker stop python-app || true
-        docker rm python-app || true
+        wsl --set-default-version 2
+        wsl --update
+        docker version --format '{{.Server.Os}}'  # Проверка режима Docker
 
-    - name: Run new container
-      shell: bash
+    - name: Stop and remove container (WSL2 compatible)
+      shell: powershell
       run: |
-        docker run -d -p 80:80 --name python-app makarmatelenok/kursach:latest
+        wsl -e bash -c "docker stop python-app || true"
+        wsl -e bash -c "docker rm python-app || true"
 
-    - name: Run new container
+    - name: Run container
+      shell: powershell
       run: |
-        docker run -d -p 80:80 --name python-app makarmatelenok/kursach:latest
-        docker run -d -p 80:80 --name python-app makarmatelenok/kursach:latest
+        wsl -e bash -c "docker run -d -p 80:80 --name python-app makarmatelenok/kursach:latest"
