@@ -1,4 +1,4 @@
-name: Docker Build and Deploy (Windows)
+name: Docker Build and Deploy
 
 on:
   push:
@@ -6,8 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest 
-    
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -23,22 +22,20 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: self-hosted  
-    env:
-      DOCKER_HOST: "npipe:////./pipe/docker_engine"  
-    
+    runs-on: self-hosted
     steps:
-    - name: Stop and remove old container 
+    - name: Stop and remove old container
       run: |
-        docker stop nodejs-app || exit 0
-        docker rm nodejs-app || exit 0
+        docker stop python-app || true
+        docker rm python-app || true
 
-    - name: Clean unused images 
+    - name: Clean unused images
       run: docker image prune -a -f
 
     - name: Pull latest image
       run: docker pull makarmatelenok/kursach:latest
 
-    - name: Run new container 
+    - name: Run new container
       run: |
-        docker run -d -p 80:80 --name nodejs-app makarmatelenok/kursach:latest
+        docker run -d -p 80:80 --name python-app makarmatelenok/kursach:latest
+        docker run -d -p 80:80 --name python-app makarmatelenok/kursach:latest
