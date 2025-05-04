@@ -1,20 +1,22 @@
 name: Build and Deploy Flask App
+
 on:
   push:
     branches: ["main"]
+
 jobs:
   build:
-    runs-on: self-hosted  # Используем ваш ПК как раннер
-
+    runs-on: self-hosted
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Build Docker image
-        run: docker build -t flask-app .
-
-      - name: Run container
-        run: |
-          docker stop myapp || true
-          docker rm myapp || true
-          docker run -d -p 80:80 --name myapp flask-app
+    - uses: actions/checkout@v4
+    
+    - name: Build Docker image
+      run: |
+        docker build -t flask-app .
+        
+    - name: Run container
+      run: |
+        docker stop myapp || true
+        docker rm myapp || true  
+        docker run -d -p 80:80 --name myapp flask-app
