@@ -8,35 +8,44 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
-    - name: Check WSL status
+    - name: Check Docker
       shell: powershell
       run: |
-        Write-Output "Проверка WSL..."
-        wsl --status
-        wsl --list --verbose
+        docker --version
+        docker ps -a
         
-    - name: Stop and remove container (Pure Docker)
+    - name: Stop container if exists
       shell: powershell
       run: |
-        # Альтернатива без WSL
-        try {
-          docker stop python-app
-          Write-Output "Контейнер остановлен"
-        } catch {
-          Write-Output "Контейнер уже остановлен"
+        $containerId = docker ps -q -f name=python-app
+        if ($containerId) {
+          docker stop $containerId
+          Write-Host "Container stopped"
+        } else {
+          Write-Host "No running container found"
         }
         
-        try {
-          docker rm python-app
-          Write-Output "Контейнер удален"
-        } catch {
-          Write-Output "Контейнер уже удален"
+    - name: Remove container if exists
+      shell: powershell
+      run: |
+        $containerId = docker ps -a -q -f name=python-app
+        if ($containerId) {
+          docker rm $containerId
+          Write-Host "Container removed"
+        } else {
+          Write-Host "No container found"
         }
-
-    - name: Run new container
+        
+    - name: Pull latest image
+      shell: powershell
+      run: |
+        docker pull makarmatelenok/kursach:latest
+        
+    - name: Run container
       shell: powershell
       run: |
         docker run -d -p 80:80 --name python-app makarmatelenok/kursach:latest
+        docker ps -a
     - name: Run container
       shell: powershell
       run: |
