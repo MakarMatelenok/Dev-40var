@@ -13,22 +13,20 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Verify Docker
+      shell: bash
       run: |
         docker --version
         docker ps
         
     - name: Build Docker image
+      shell: bash
       run: |
         echo "=== START BUILDING ==="
         docker build -t flask-app .
         echo "=== BUILD COMPLETE ==="
         
-    - name: Verify Image
-      run: |
-        docker images
-        docker inspect flask-app
-        
     - name: Run container
+      shell: bash
       run: |
         echo "=== STARTING CONTAINER ==="
         docker stop myapp || true
