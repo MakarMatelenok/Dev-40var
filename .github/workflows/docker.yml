@@ -1,4 +1,4 @@
-name: Deploy Kursach App
+name: Auto Deploy App
 
 on: 
   push:
@@ -9,22 +9,36 @@ jobs:
     runs-on: self-hosted
     
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Build Docker image
-      shell: powershell
-      run: docker build -t kursach .
-    
-    - name: Stop and remove old container
-      shell: powershell  # Явно указываем PowerShell
-      run: |
-        try { docker stop kursach } catch { Write-Host "Контейнер уже остановлен" }
-        try { docker rm kursach } catch { Write-Host "Контейнер уже удален" }
-    
-    - name: Run new container
-      shell: powershell
-      run: |
-        docker run -d `
-          -p 80:80 `
-          --name kursach `
-          kursach
+      # Шаг 1: Получение кода
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Шаг 2: Сборка образа
+      - name: Build Docker image
+        shell: powershell
+        run: |
+          docker build -t kursach .
+          
+      # Шаг 3: Остановка и удаление старого контейнера (если есть)
+      - name: Stop and clean old container
+        shell: powershell
+        run: |
+          $container = docker ps -aq -f name=kursach
+          if ($container) {
+            docker stop $container
+            docker rm $container
+            Write-Host "Старый контейнер удалён"
+          } else {
+            Write-Host "Контейнер не найден, пропускаю"
+          }
+          
+      # Шаг 4: Запуск нового контейнера
+      - name: Run new container
+        shell: powershell
+        run: |
+          docker run -d `
+            -p 80:80 `
+            --name kursach `
+            --restart unless-stopped `
+            kursach
+          Write-Host "Контейнер запущен!"
