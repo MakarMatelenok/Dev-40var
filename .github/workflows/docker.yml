@@ -1,52 +1,31 @@
-name: Docker Deploy
+name: Deploy Kursach App  # Изменил название для ясности
 
-on:
+on: 
   push:
-    branches: ["main"]
+    branches: ["main"]  # Срабатывает при пуше в main ветку
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: self-hosted  # Запуск на вашем ПК
+    
     steps:
-    - name: Initialize Docker
-      shell: powershell
+    # 1. Забираем код из репозитория
+    - uses: actions/checkout@v4
+    
+    # 2. Собираем образ (теперь с именем kursach)
+    - name: Build Docker image
+      run: docker build -t kursach .  # Изменил имя образа
+    
+    # 3. Останавливаем и удаляем старый контейнер
+    - name: Stop and remove old container
       run: |
-        # Проверка доступности Docker
-        docker --version
-        docker ps -a
-        
-    - name: Cleanup old container
-      shell: powershell
+        docker stop kursach || true  # Изменил имя контейнера
+        docker rm kursach || true    # Изменил имя контейнера
+    
+    # 4. Запускаем новый контейнер
+    - name: Run new container
       run: |
-        # Безопасное удаление предыдущего контейнера
-        $container = docker ps -aq --filter "name=python-app"
-        if ($container) {
-          docker stop $container
-          docker rm $container
-          Write-Host "Old container removed"
-        } else {
-          Write-Host "No existing container found"
-        }
-        
-    - name: Pull image
-      shell: powershell
-      run: |
-        # Авторизация и загрузка образа
-        $env:DOCKER_HOST = "npipe:////./pipe/docker_engine"
-        $token = "${{ secrets.DOCKER_HUB_TOKEN }}"
-        echo $token | docker login -u makarmatelenok --password-stdin
-        docker pull makarmatelenok/kursach:latest
-        
-    - name: Run container
-      shell: powershell
-      run: |
-        # Запуск контейнера напрямую через Docker
-        docker run -d `
-          -p 80:80 `
-          --name python-app `
-          --restart unless-stopped `
-          makarmatelenok/kursach:latest
-        
-        # Проверка статуса
-        docker ps -a
-        Write-Host "Container started successfully"
+        docker run -d \
+          -p 80:80 \
+          --name kursach \  # Изменил имя контейнера
+          kursach  # Используем новый имя образа
