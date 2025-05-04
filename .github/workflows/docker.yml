@@ -1,4 +1,4 @@
-name: Docker Build and Deploy
+name: Docker Build and Deploy (Linux on Windows)
 
 on:
   push:
@@ -6,34 +6,40 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Сборка на Linux
+    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
     - name: Login to Docker Hub
       run: |
         echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u makarmatelenok --password-stdin
 
-    - name: Build and push Docker image
+    - name: Build and push
       run: |
         docker build -t makarmatelenok/kursach:latest .
         docker push makarmatelenok/kursach:latest
 
   deploy:
     needs: build
-    runs-on: self-hosted
+    runs-on: self-hosted  # Ваш Windows-раннер
     steps:
+    - name: Set up WSL2 integration
+      shell: powershell
+      run: |
+        # Проверяем, что Docker использует WSL2
+        docker version --format '{{.Server.Os}}'
+        
     - name: Stop and remove old container
+      shell: bash  # Явно используем Bash для Linux-синтаксиса
       run: |
         docker stop python-app || true
         docker rm python-app || true
 
-    - name: Clean unused images
-      run: docker image prune -a -f
-
-    - name: Pull latest image
-      run: docker pull makarmatelenok/kursach:latest
+    - name: Run new container
+      shell: bash
+      run: |
+        docker run -d -p 80:80 --name python-app makarmatelenok/kursach:latest
 
     - name: Run new container
       run: |
